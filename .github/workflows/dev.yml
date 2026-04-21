@@ -18,7 +18,7 @@ jobs:
         id: scan
         with:
           scan_config_path: .github/.fluidattacks.yaml
-          scanner_mode: full
+          scanner_mode: diff
 
       - name: Upload results to GitHub Security tab
         if: always()
@@ -41,6 +41,7 @@ jobs:
       - uses: fluidattacks/sca-action@main
         id: scan
         with:
+          scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: full
 
       - name: Upload results to GitHub Security tab
@@ -63,6 +64,8 @@ jobs:
 
       - uses: fluidattacks/dast-action@main
         id: scan
+        with:
+          scan_config_path: .github/.fluidattacks.yaml
 
       - name: Fail if vulnerabilities found
         if: steps.scan.outputs.vulnerabilities_found == 'true'
@@ -79,6 +82,7 @@ jobs:
       - uses: fluidattacks/secret-scan-action@main
         id: scan
         with:
+          scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: full
 
       - name: Upload results to GitHub Security tab
