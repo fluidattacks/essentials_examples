@@ -12,6 +12,9 @@
   "devDependencies": {
     "xmldom": "0.4.0"
   },
+  "scripts": {
+    "greet": "echo 'Hello world'"
+  },
   "license": "MIT",
   "main": "index.js",
   "name": "test",
