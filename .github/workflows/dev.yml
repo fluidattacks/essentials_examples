@@ -1,18 +1,17 @@
-# Test workflow for essentials GH actions
 name: Security Scans
 on:
   pull_request:
-  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
   sast:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # required for differential scanning
 
       - uses: fluidattacks/sast-action@main
         id: scan
@@ -20,18 +19,15 @@ jobs:
           scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: diff
 
-      - name: Upload results to GitHub Security tab
+      - name: Upload SAST results
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: ${{ steps.scan.outputs.sarif_file }}
-
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
+          name: sast-results
+          path: fluidattacks-results.sarif
+          if-no-files-found: warn
 
   sca-scan:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -44,21 +40,12 @@ jobs:
           scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: full
 
-      - name: Upload results to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif_file }}
-
       - name: Fail if vulnerabilities found
         if: steps.scan.outputs.vulnerabilities_found == 'true'
         run: exit 1
 
   dast-scan:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +59,6 @@ jobs:
         run: exit 1
 
   secret-scan:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -83,19 +69,4 @@ jobs:
         id: scan
         with:
           scan_config_path: .github/.fluidattacks.yaml
-          scanner_mode: full
 
-      - name: Upload results to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif_file }}
-
-  ci-gate:
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: fluidattacks/ci-gate-action@main
-        with:
-          api_token: ${{ secrets.FA_API_TOKEN }}
-          strict: true

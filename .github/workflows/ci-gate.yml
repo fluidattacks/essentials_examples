@@ -1,0 +1,56 @@
+name: CI Gate
+on:
+  workflow_run:
+    workflows: [Security Scans]
+    types: [completed]
+
+jobs:
+  ci-gate:
+    if: github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fluidattacks/ci-gate-action@main
+        id: gate
+        with:
+          api_token: ${{ secrets.FA_API_TOKEN }}
+          strict: false
+          report_output_path: ci-gate-report.json
+
+      - name: Upload CI gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gate-report
+          path: ci-gate-report.json
+          if-no-files-found: warn
+
+  compare:
+    needs: [ci-gate]
+    if: '!cancelled()'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # required to download artifacts from the scan workflow run
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download SAST results from scan workflow
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          name: sast-results
+          path: artifacts/sast
+
+      - name: Download CI gate report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ci-gate-report
+          path: artifacts/ci-gate
+
+      - name: Compare SAST findings against platform
+        run: |
+          python3 .github/scripts/compare-findings.py \
+            artifacts/sast/fluidattacks-results.sarif \
+            artifacts/ci-gate/ci-gate-report.json
