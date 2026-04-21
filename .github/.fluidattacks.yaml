@@ -1,0 +1,19 @@
+language: EN
+strictness_threshold: medium
+output:
+  file_path: fluidattacks-results.sarif
+  format: SARIF
+ss:
+  include:
+    - .
+  exclude:
+    - environment/backend/
+sca:
+  include:
+    - .
+sast:
+  include:
+    - .
+dast:
+  urls:
+    - url: https://www.fluidattacks.com

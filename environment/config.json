@@ -1,0 +1,21 @@
+{
+  "environment": "production",
+  "openai": {
+    "api_key": "sk-proj-1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef"
+  },
+  "cloudflare": {
+    "api_token": "CFAT-0987654321abcdefghijklmnopqrstuvwxyz",
+    "zone_id": "1a2b3c4d5e6f7890abcdef1234567890"
+  },
+  "sonarqube": {
+    "token": "squ_abcdef1234567890abcdef1234567890abcdef12",
+    "url": "https://sonar.internal.example.com"
+  },
+  "aws": {
+    "access_key_id": "AKIAIOSFODNN7EXAMPLE",
+    "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  },
+  "npm": {
+    "token": "npm_abcdefghijklmnopqrstuvwxyz1234567890"
+  }
+}

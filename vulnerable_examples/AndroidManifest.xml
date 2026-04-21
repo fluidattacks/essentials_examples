@@ -1,0 +1,38 @@
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:sharedUserId="android.uid.system"
+  android:versionCode="4"
+  android:versionName="1.0"
+  package="com.android.zerosms"
+>
+  <permission
+    android:name="de.custom.permission.PERMISSION_1"
+    android:protectionLevel="signature"
+  />
+  <!-- Unsafe cases -->
+  <application android:label="@7F040001" android:icon="@7F020002">
+    <provider
+      android:name="io.github.triniwiz.fancycamera.FancyCameraFileProvider"
+      android:authorities="${applicationId}.fileprovider"
+    >
+    </provider>
+    <provider
+      android:name="io.github.triniwiz.fancycamera.FancyCameraFileProvider"
+      android:authorities="${applicationId}.fileprovider"
+      android:exported="true"
+      android:grantUriPermissions="true"
+      android:permission="de.custom.permission.PERMISSION_2"
+    >
+    </provider>
+  </application>
+  <!-- Safe Cases -->
+  <application android:label="@7F040001" android:icon="@7F020002">
+    <provider
+      android:authorities="com.andriod.databasetest.contentprovider"
+      android:name=".db.ContentProviderDb"
+      android:exported="false"
+      android:grantUriPermissions="true"
+    >
+    </provider>
+  </application>
+</manifest>
