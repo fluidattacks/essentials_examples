@@ -2,15 +2,19 @@
   "author": "Fluid Attacks",
   "dependencies": {
     "@angular/core": "^13.3.3",
-    "quill": "1.3.7",
+    "@astrojs/node": "^10.0.4",
+    "ajv": "^8.12.0",
     "cloudron-sysadmin": "1.0.0",
+    "quill": "1.3.7",
     "script-manager": "0.8.6",
-    "slug": "0.9.0",
-    "ajv": "^8.12.0"
+    "slug": "0.9.0"
   },
   "description": "Test application",
   "devDependencies": {
     "xmldom": "0.4.0"
+  },
+  "scripts": {
+    "goodbye": "echo 'Goodbye'"
   },
   "license": "MIT",
   "main": "index.js",
