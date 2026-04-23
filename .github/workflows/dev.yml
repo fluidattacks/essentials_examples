@@ -40,9 +40,13 @@ jobs:
           scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: full
 
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
+      - name: Upload SCA results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-results
+          path: fluidattacks-results.sarif
+          if-no-files-found: warn
 
   dast-scan:
     runs-on: ubuntu-latest
@@ -88,7 +92,7 @@ jobs:
           if-no-files-found: warn
 
   compare:
-    needs: [sast, ci-gate]
+    needs: [sast, sca-scan, ci-gate]
     if: '!cancelled()'
     runs-on: ubuntu-latest
     steps:
@@ -103,11 +107,30 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
+          name: sca-results
+          path: artifacts/sca
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
           name: ci-gate-report
           path: artifacts/ci-gate
 
-      - name: Compare SAST findings against platform
+      - name: Compare findings against platform
         run: |
+          sast_result=0
+          sca_result=0
+
+          echo "--- SAST ---"
           python3 .github/scripts/compare-findings.py \
+            --technique SAST \
             artifacts/sast/fluidattacks-results.sarif \
-            artifacts/ci-gate/ci-gate-report.json
+            artifacts/ci-gate/ci-gate-report.json || sast_result=$?
+
+          echo "--- SCA ---"
+          python3 .github/scripts/compare-findings.py \
+            --technique SCA \
+            artifacts/sca/fluidattacks-results.sarif \
+            artifacts/ci-gate/ci-gate-report.json || sca_result=$?
+
+          exit $((sast_result | sca_result))

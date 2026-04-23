@@ -67,7 +67,9 @@ def parse_sast_strict(sarif_path: str) -> set[tuple[str, int]]:
     return locations
 
 
-def parse_ci_agent_strict(report_path: str) -> set[tuple[str, int]] | None:
+def parse_ci_agent_strict(
+    report_path: str, technique: str
+) -> set[tuple[str, int]] | None:
     if not os.path.exists(report_path):
         print(f"No CI agent report at {report_path}.")
         return None
@@ -78,7 +80,7 @@ def parse_ci_agent_strict(report_path: str) -> set[tuple[str, int]] | None:
     locations: set[tuple[str, int]] = set()
     for finding in report.get("findings", []):
         for vuln in finding.get("vulnerabilities", []):
-            if vuln.get("technique") != "SAST":
+            if vuln.get("technique") != technique:
                 continue
             where = _strip_root(vuln.get("where", ""), vuln.get("root_nickname", ""))
             try:
@@ -90,28 +92,26 @@ def parse_ci_agent_strict(report_path: str) -> set[tuple[str, int]] | None:
     return locations
 
 
-def run_strict(sarif_path: str, report_path: str) -> None:
-    sast = parse_sast_strict(sarif_path)
-    ci_agent = parse_ci_agent_strict(report_path)
+def run_strict(sarif_path: str, report_path: str, technique: str) -> None:
+    scanner = parse_sast_strict(sarif_path)
+    ci_agent = parse_ci_agent_strict(report_path, technique)
 
-    print(f"SAST findings:               {len(sast)}")
+    print(f"Scanner findings:            {len(scanner)}")
 
     if ci_agent is None:
-        print(
-            "CI agent report is missing — cannot determine new vs. existing vulnerabilities."
-        )
+        print("CI agent report is missing — cannot determine new vs. existing vulnerabilities.")
         sys.exit(1)
 
-    print(f"Platform-tracked SAST vulns: {len(ci_agent)}")
+    print(f"Platform-tracked {technique:4} vulns: {len(ci_agent)}")
 
-    new_vulns = sast - ci_agent
+    new_vulns = scanner - ci_agent
     if new_vulns:
         print(f"\nNew vulnerabilities not tracked in the platform ({len(new_vulns)}):")
         for path, line in sorted(new_vulns):
             print(f"  {path}:{line}")
         sys.exit(1)
 
-    print("\nAll SAST findings are already tracked in the platform.")
+    print("\nAll findings are already tracked in the platform.")
 
 
 # ── lax ───────────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ def parse_sast_lax(sarif_path: str) -> Counter:
     return counter
 
 
-def parse_ci_agent_lax(report_path: str) -> Counter | None:
+def parse_ci_agent_lax(report_path: str, technique: str) -> Counter | None:
     if not os.path.exists(report_path):
         print(f"No CI agent report at {report_path}.")
         return None
@@ -149,7 +149,7 @@ def parse_ci_agent_lax(report_path: str) -> Counter | None:
     for finding in report.get("findings", []):
         category = finding.get("title", "")[:3]
         for vuln in finding.get("vulnerabilities", []):
-            if vuln.get("technique") != "SAST":
+            if vuln.get("technique") != technique:
                 continue
             where = _strip_root(vuln.get("where", ""), vuln.get("root_nickname", ""))
             if where:
@@ -157,35 +157,31 @@ def parse_ci_agent_lax(report_path: str) -> Counter | None:
     return counter
 
 
-def run_lax(sarif_path: str, report_path: str) -> None:
-    sast = parse_sast_lax(sarif_path)
-    ci_agent = parse_ci_agent_lax(report_path)
+def run_lax(sarif_path: str, report_path: str, technique: str) -> None:
+    scanner = parse_sast_lax(sarif_path)
+    ci_agent = parse_ci_agent_lax(report_path, technique)
 
-    print(f"SAST findings:               {sum(sast.values())}")
+    print(f"Scanner findings:            {sum(scanner.values())}")
 
     if ci_agent is None:
-        print(
-            "CI agent report is missing — cannot determine new vs. existing vulnerabilities."
-        )
+        print("CI agent report is missing — cannot determine new vs. existing vulnerabilities.")
         sys.exit(1)
 
-    print(f"Platform-tracked SAST vulns: {sum(ci_agent.values())}")
+    print(f"Platform-tracked {technique:4} vulns: {sum(ci_agent.values())}")
 
     failures = [
-        (cat, path, sast_n, ci_agent.get((cat, path), 0))
-        for (cat, path), sast_n in sorted(sast.items())
-        if sast_n > ci_agent.get((cat, path), 0)
+        (cat, path, n, ci_agent.get((cat, path), 0))
+        for (cat, path), n in sorted(scanner.items())
+        if n > ci_agent.get((cat, path), 0)
     ]
 
     if failures:
-        print(
-            f"\nNew vulnerabilities not tracked in the platform ({len(failures)} group(s)):"
-        )
-        for category, path, sast_n, ci_n in failures:
-            print(f"  [{category}] {path}  (SAST: {sast_n}, platform: {ci_n})")
+        print(f"\nNew vulnerabilities not tracked in the platform ({len(failures)} group(s)):")
+        for category, path, scanner_n, ci_n in failures:
+            print(f"  [{category}] {path}  (scanner: {scanner_n}, platform: {ci_n})")
         sys.exit(1)
 
-    print("\nAll SAST findings are already tracked in the platform.")
+    print("\nAll findings are already tracked in the platform.")
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
@@ -204,14 +200,20 @@ def main() -> None:
             "lax: fail if SAST has more findings for a (category, path) pair than the platform"
         ),
     )
-    parser.add_argument("sarif", metavar="sast.sarif")
+    parser.add_argument(
+        "--technique",
+        choices=["SAST", "SCA"],
+        default="SAST",
+        help="Technique to filter CI agent findings against (default: SAST)",
+    )
+    parser.add_argument("sarif", metavar="scanner.sarif")
     parser.add_argument("report", metavar="ci-agent-report.json")
     args = parser.parse_args()
 
     if args.mode == "strict":
-        run_strict(args.sarif, args.report)
+        run_strict(args.sarif, args.report, args.technique)
     else:
-        run_lax(args.sarif, args.report)
+        run_lax(args.sarif, args.report, args.technique)
 
 
 if __name__ == "__main__":
