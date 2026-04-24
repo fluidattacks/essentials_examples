@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: fluidattacks/secret-scan-action@main
+      - uses: fluidattacks/ss-action@main
         id: scan
         with:
           scan_config_path: .github/.fluidattacks.yaml
