@@ -15,5 +15,7 @@ sast:
   include:
     - .
 dast:
+  strict_connectivity: True
   urls:
     - url: https://www.fluidattacks.com
+    - url: https://www.unreachableenvironment.co
