@@ -6,7 +6,7 @@ This repository is a sandbox for testing and demonstrating the [Fluid Attacks Es
 
 ## Purpose
 
-- Validate that each Fluid Attacks GitHub Action (SAST, SCA, DAST, Secret Scan, CI Gate) detects the expected findings.
+- Validate that each Fluid Attacks GitHub Action (SAST, SCA, DAST, Secret Scan, MAST, CI Gate) detects the expected findings.
 - Demonstrate how the scanners integrate into a trunk-based development workflow with pull request checks.
 - Serve as a reference for configuring the actions in customer repositories.
 
@@ -20,7 +20,7 @@ The workflow at `.github/workflows/dev.yml` runs the full Fluid Attacks scanner 
 
 | Trigger | Jobs |
 |---|---|
-| `pull_request` | `sast`, `sca-scan`, `dast-scan`, `secret-scan` |
+| `pull_request` | `sast`, `sca-scan`, `dast-scan`, `secret-scan`, `mast-scan` |
 | `pull_request_target` | `ci-gate` |
 
 The `ci-gate` job runs on `pull_request_target` because GitHub withholds secrets from `pull_request` workflows triggered by fork PRs. The CI Gate only calls the Fluid Attacks API and never checks out or executes PR code, so this is safe.

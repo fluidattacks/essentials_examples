@@ -14,6 +14,9 @@ sca:
 sast:
   include:
     - .
+apk:
+  include:
+    - glob(**/**.apk)
 dast:
   strict_connectivity: True
   urls:

@@ -67,3 +67,13 @@ jobs:
       - name: Fail if vulnerabilities found
         if: steps.scan.outputs.vulnerabilities_found == 'true'
         run: exit 1
+
+  mast-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker://docker.io/fluidattacks/mast:latest
+        name: mastAnalysis
+        with:
+          args: mast scan .github/.fluidattacks.yaml
