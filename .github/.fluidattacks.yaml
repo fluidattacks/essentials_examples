@@ -17,6 +17,7 @@ sast:
 apk:
   include:
     - glob(**.apk)
+  use_sast_analysis: False
 dast:
   strict_connectivity: True
   urls:

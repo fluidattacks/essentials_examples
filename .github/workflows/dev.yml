@@ -76,4 +76,4 @@ jobs:
       - uses: docker://docker.io/fluidattacks/mast:latest
         name: mastAnalysis
         with:
-          args: mast scan .github/.fluidattacks.yaml
+          args: mast --strict scan .github/.fluidattacks.yaml
