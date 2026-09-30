@@ -16,7 +16,7 @@ sast:
     - .
 apk:
   include:
-    - glob(**/**.apk)
+    - glob(**.apk)
 dast:
   strict_connectivity: True
   urls:
