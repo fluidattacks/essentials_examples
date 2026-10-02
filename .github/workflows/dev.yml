@@ -7,6 +7,8 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
+      contents: read
       security-events: write
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +18,7 @@ jobs:
         with:
           scan_config_path: .github/.fluidattacks.yaml
           scanner_mode: full
+          group: machinetest
 
       - name: Fail if vulnerabilities found
         if: steps.scan.outputs.vulnerabilities_found == 'true'
