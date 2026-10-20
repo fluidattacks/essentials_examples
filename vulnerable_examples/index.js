@@ -13,7 +13,8 @@ client.onload = function () {
 };
 
 client.onload = function () {
-    localStorage.setItem("userData", this.response);
+    const jwt_token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+    localStorage.setItem("userData", jwt_token);
 };
 
 client.onload = function () {
