@@ -1,5 +1,6 @@
 language: EN
 strictness_threshold: medium
+namespace: essentials_examples
 output:
   file_path: fluidattacks-results.sarif
   format: SARIF
