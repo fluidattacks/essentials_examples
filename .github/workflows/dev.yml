@@ -4,89 +4,79 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sast:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: fluidattacks/sast-action@main
-        id: scan
-        with:
-          scan_config_path: .github/.fluidattacks.yaml
-          scanner_mode: full
-          group: machinetest
-
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
-
-  sca-scan:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: fluidattacks/sca-action@main
-        id: scan
-        with:
-          scan_config_path: .github/.fluidattacks.yaml
-          scanner_mode: full
-          group: machinetest
-
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
-
-  dast-scan:
+  ci-gate-oidc-lax:
+    name: CI Gate (OIDC, lax)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
-
-      - uses: fluidattacks/dast-action@main
-        id: scan
         with:
-          scan_config_path: .github/.fluidattacks.yaml
+          persist-credentials: false
+
+      - uses: fluidattacks/ci-gate-action@flagos
+        id: gate
+        with:
           group: machinetest
 
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
+      - name: Print result
+        run: echo "vulnerabilities_found=${{ steps.gate.outputs.vulnerabilities_found }}"
 
-  secret-scan:
+  ci-gate-oidc-strict:
+    name: CI Gate (OIDC, strict)
+    runs-on: ubuntu-latest
+    # Strict mode fails the job (exit 66) when policy-breaking vulnerabilities exist
+    continue-on-error: true
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: fluidattacks/ci-gate-action@flagos
+        with:
+          group: machinetest
+          strict: true
+
+  ci-gate-report:
+    name: CI Gate (report + repo_name)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v4
-
-      - uses: fluidattacks/ss-action@main
-        id: scan
         with:
-          scan_config_path: .github/.fluidattacks.yaml
+          persist-credentials: false
+
+      - uses: fluidattacks/ci-gate-action@flagos
+        id: gate
+        with:
           group: machinetest
+          repo_name: ${{ github.event.repository.name }}
+          report_output_path: ci-gate-report.json
 
-      - name: Fail if vulnerabilities found
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
-        run: exit 1
+      - name: Show report
+        run: |
+          echo "report: ${{ steps.gate.outputs.report_output_path }}"
+          cat ci-gate-report.json
 
-  mast-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker://docker.io/fluidattacks/mast:latest
-        name: mastAnalysis
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          args: mast --strict scan .github/.fluidattacks.yaml
+          name: ci-gate-report
+          path: ci-gate-report.json
+          if-no-files-found: ignore
+
+  ci-gate-no-checkout:
+    name: CI Gate (no checkout)
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: fluidattacks/ci-gate-action@flagos
+        with:
+          group: machinetest
